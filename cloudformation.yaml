@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Demo of using AWS Auto-scaling to create a step-scaling policy for SageMaker with a custom metric.
 
 Parameters:
-  MySageMakerEndpointResourceId:
-    Type: String
-    Default: endpoint/object-detection-2020-07-13-19-26-21-768/variant/AllTraffic
-
   MySageMakerEndpointName:
     Type: String
     Default: object-detection-2020-07-13-19-26-21-768
@@ -15,33 +11,107 @@ Parameters:
     Default: AllTraffic
 
 Resources:
-  # Docs:
+
+  #-----------------------------------------------------------------------------
+  # We have to register a sagemaker endpoint as a scalable target; normally, 
+  # this is done for you when you configure auto-scaling in the AWS SageMaker 
+  # web console, but here we do it as code: 
+  SageMakerEndpointScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties: 
+      ServiceNamespace: sagemaker
+      ScalableDimension: sagemaker:variant:DesiredInstanceCount
+      ResourceId: !Sub "endpoint/${MySageMakerEndpointName}/variant/${MySageMakerVariantName}"  
+      MinCapacity: 1
+      MaxCapacity: 10
+      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/sagemaker.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_SageMakerEndpoint"
+      SuspendedState: 
+        DynamicScalingInSuspended: false
+        DynamicScalingOutSuspended: false
+
+  #-----------------------------------------------------------------------------
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-applicationautoscaling-scalingpolicy.html#cfn-applicationautoscaling-scalingpolicy-policytype
+  # The scaling policy determines how to scale up/down relative to an arbitrary CloudWatch Alarm.
+  # The scaling policy definition does *not* name the metric, just the policies that will be applied
+  # based on how far the actual metric value deviates from the metric threshold in the alarm.
+  # The alarm itself is defined as a separate CloudWatch metric. 
   SageMakerDemoScalingPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties: 
+
       PolicyName: SageMakerDemoScalingPolicy
       PolicyType: StepScaling
-      ScalableDimension: sagemaker:variant:DesiredInstanceCount
-      ServiceNamespace: sagemaker
-      ResourceId: 
-        !Sub "endpoint/${MySageMakerEndpointName}/variant/${MySageMakerVariantName}"
+      ScalingTargetId: !Ref SageMakerEndpointScalingTarget
+
       StepScalingPolicyConfiguration: 
+        # Understanding the step policies can be a bit confusing... see the docs below for a bit more clarity:
+        # - https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-step-scaling-policies.html
         AdjustmentType: ChangeInCapacity    #Specifies whether the ScalingAdjustment value in the StepAdjustment property is an absolute number or a percentage of the current capacity.
         Cooldown: 300
         MetricAggregationType: Average
+        # Steps are *relative* to the alarm threshold and metric that this policy applies to. 
+        # We will associate this policy to an alarm that tracks invocationsPerEndpoint and has an alarm threshold of >=0. 
+        # Therefore, below, 0-20 invocations = scale down, 20-50 = do nothing, > 50 scale up
         StepAdjustments: 
-          - 
-            # Scale all the way down to zero, if metric <=20
+          -
             MetricIntervalUpperBound: 20
-            ScalingAdjustment: -1           # -1 = remove an instance
-          - 
-            # Do nothing if metric between 20 and 50
+            ScalingAdjustment: -1  
+          -
             MetricIntervalLowerBound: 20
             MetricIntervalUpperBound: 50
-            ScalingAdjustment: 0
-          - 
-            # Scale up if metric above 50
+            ScalingAdjustment: 0  
+          -
             MetricIntervalLowerBound: 50
-            ScalingAdjustment: 1
-            
+            ScalingAdjustment: 0  
+
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarms-alarmactions
+  SageMakerDemoScalingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmName: SageMakerDemoScalingAlarm
+      AlarmDescription: Monitor invocations per target for SageMaker (with nulls zero-filled), used for auto-scaling the endpoint
+
+      # Our alarm is M points out of N periods, where M = DatapointsToAlarm and N=EvaluationPeriods
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      TreatMissingData: missing
+      
+      # What triggers our alarm?
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: 0              
+      
+      Metrics: 
+        - 
+          Id: m1    # arbitrary ID, must be lowercase
+          Label: InvocationsPerInstance
+          ReturnData: false     # we use this in our math, but we don't return data
+          MetricStat: 
+            Stat: Sum 
+            Period: 60
+            Metric: 
+              MetricName: InvocationsPerInstance
+              Namespace: AWS/SageMaker 
+              Dimensions: 
+                - 
+                  Name: EndpointName
+                  Value: !Ref MySageMakerEndpointName
+                -
+                  Name: VariantName
+                  Value: !Ref MySageMakerVariantName
+        - 
+          Id: e1  # arbitrary ID, must be lowercase
+          Label: InvocationsPerEndpoint
+          ReturnData: true      # this is what we base the alarm on, so we return data
+          Expression: "FILL(m1,0)"
+      ActionsEnabled: true
+
+      # Based on the way we defined our custom alarm, the alarm will always be in alarm state (>=0),
+      # so I don't *think* the "OKActions" is needed, but leaving it here just in case. It would
+      # probably be cleaner to tweak the alarm to always be in "OK" status just so we're not seeing
+      # red in our alarms...
+      AlarmActions: 
+        - !Ref SageMakerDemoScalingPolicy
+      OKActions: 
+        - !Ref SageMakerDemoScalingPolicy
+
