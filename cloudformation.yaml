@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Demo of using AWS Auto-scaling to create a step-scaling policy for SageMaker with a custom metric.
+
+Parameters:
+  MySageMakerEndpointResourceId:
+    Type: String
+    Default: endpoint/object-detection-2020-07-13-19-26-21-768/variant/AllTraffic
+
+  MySageMakerEndpointName:
+    Type: String
+    Default: object-detection-2020-07-13-19-26-21-768
+
+  MySageMakerVariantName:
+    Type: String
+    Default: AllTraffic
+
+Resources:
+  # Docs:
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-applicationautoscaling-scalingpolicy.html#cfn-applicationautoscaling-scalingpolicy-policytype
+  SageMakerDemoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties: 
+      PolicyName: SageMakerDemoScalingPolicy
+      PolicyType: StepScaling
+      ScalableDimension: sagemaker:variant:DesiredInstanceCount
+      ServiceNamespace: sagemaker
+      ResourceId: 
+        !Sub "endpoint/${MySageMakerEndpointName}/variant/${MySageMakerVariantName}"
+      StepScalingPolicyConfiguration: 
+        AdjustmentType: ChangeInCapacity    #Specifies whether the ScalingAdjustment value in the StepAdjustment property is an absolute number or a percentage of the current capacity.
+        Cooldown: 300
+        MetricAggregationType: Average
+        StepAdjustments: 
+          - 
+            # Scale all the way down to zero, if metric <=20
+            MetricIntervalUpperBound: 20
+            ScalingAdjustment: -1           # -1 = remove an instance
+          - 
+            # Do nothing if metric between 20 and 50
+            MetricIntervalLowerBound: 20
+            MetricIntervalUpperBound: 50
+            ScalingAdjustment: 0
+          - 
+            # Scale up if metric above 50
+            MetricIntervalLowerBound: 50
+            ScalingAdjustment: 1
+            
