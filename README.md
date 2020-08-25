@@ -18,6 +18,11 @@ Application Auto-scaling supports both target-tracking and step-scaling policies
 
 If you want to use step-scaling with SageMaker, you instead need to use the Application Auto-scaling APIs, CLI, or CloudFormation. This project shows you the CloudFormation approach.
 
+## Dashboaord
+
+The project includes an example CloudWatch Dashboard that charts your number of instances against your invocations per instance:
+
+![Image of Dashboard](./images/dashboard.png)
 
 ## Architecture
 
