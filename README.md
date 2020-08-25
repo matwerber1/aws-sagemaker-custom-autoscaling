@@ -18,12 +18,6 @@ Application Auto-scaling supports both target-tracking and step-scaling policies
 
 If you want to use step-scaling with SageMaker, you instead need to use the Application Auto-scaling APIs, CLI, or CloudFormation. This project shows you the CloudFormation approach.
 
-## Dashboaord
-
-The project includes an example CloudWatch Dashboard that charts your number of instances against your invocations per instance:
-
-![Image of Dashboard](./images/dashboard.png)
-
 ## Architecture
 
 The included CloudFormation Template creates the following:
@@ -34,7 +28,10 @@ The included CloudFormation Template creates the following:
 
 * **SageMakerDemoScalingAlarm** - this is a CloudWatch Alarm that enters the alarm state when the SageMaker endpoint's **InvocationsPerInstance** metric is greater than or equal to zero. In other words, this alarm would always be in alarm state. This may sound odd, but this is because I wanted a single scaling policy and alarm to handle both scale-up and scale-down actions. It's probably visually cleaner to break this out into separate alarms/policies, but this was my faster interim approach.
 
-* **SageMakerScalingDashboard** - a CloudWatch dashboard that graphs your endpoint's invocations per instance and total number of running instances over time.
+* **SageMakerScalingDashboard** - a CloudWatch dashboard that graphs your endpoint's invocations per instance and total number of running instances over time. The dashboard looks like this:
+
+  ![Image of Dashboard](./images/dashboard.png)
+
 
 ## Pre-requisites
 
