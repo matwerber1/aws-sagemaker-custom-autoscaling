@@ -6,7 +6,7 @@ This project demonstrates how you can create a custom step-scaling auto-scaling 
 
 SageMaker endpoints provide out-of-the-box [target-tracking](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-target-tracking.html) autoscaling for the [InvocationsPerInstance](https://docs.aws.amazon.com/sagemaker/latest/dg/monitoring-cloudwatch.html) metric.
 
-With a **target-tracking** policy, you simply set a metric and desired metric value, AWS we will scale up or down for you to track close to that metric. 
+With a **target-tracking** policy, you simply set a metric and desired metric value, and AWS will scale up or down for you to track close to that metric. 
 
 This works well, but in certain cases, you may want to use a different metric or otherwise modify the default behavior of this built-in tracking. To do that, you need to create a custom [Step Scaling Policy](https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-step-scaling-policies.html). **Step-scaling** requires a bit more work to set up, but gives you more flexibility in the scaling events.
 
