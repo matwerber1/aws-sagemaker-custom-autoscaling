@@ -32,7 +32,9 @@ The included CloudFormation Template creates the following:
 
   ![Image of Dashboard](./images/dashboard.png)
 
-## Pre-requisites
+  In the example above, you can see that the number of running instances (orange line) scales up with traffic, but you can also see that the timing is a bit too late to match demand. This suggests that I should either modify the alarm and/or scaling policy to be more aggressive.
+
+## Prerequisites
 
 1. Pre-existing SageMaker endpoint deployed.
 2. AWS CLI installed and configured from the machine where you're running this project. 
