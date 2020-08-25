@@ -32,6 +32,7 @@ The included CloudFormation Template creates the following:
 
   ![Image of Dashboard](./images/dashboard.png)
 
+  ** Note - ignore the fact that the # of running instances actually goes down in the middle even though the invocation count increases. I was testing / changing things mid-flight while invoking the endpoint, so the graphic looks odd. I will update with a more meaningful picture a bit later. 
 
 ## Pre-requisites
 

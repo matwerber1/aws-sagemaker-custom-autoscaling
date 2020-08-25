@@ -8,7 +8,7 @@ const VARIANT_NAME = 'AllTraffic';
 const main = async (event) => {
 
   // Initial number (approx.) of requests to send per minute
-  var requestsPerMinute = 60;
+  var requestsPerMinute = 10;
 
   // For each request rate, how long do you want to send that level of traffic?
   var minutesPerStepSize = 5;
@@ -17,7 +17,7 @@ const main = async (event) => {
   var requestStepSize = 30;
 
   // How many times do you want to increase the rate? 
-  var numberOfSteps = 10;
+  var numberOfSteps = 15;
 
   const MS_PER_MINUTE = 60000;
   var count = 0;
