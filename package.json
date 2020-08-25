@@ -1,0 +1,23 @@
+{
+  "name": "sagemaker-step-scaling",
+  "version": "1.0.0",
+  "description": "This project demonstrates how you can create a custom step-scaling auto-scaling policy for your hosted SageMaker endpoint.",
+  "main": "invoke-endpoint.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matwerber1/aws-sagemaker-custom-autoscaling.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/matwerber1/aws-sagemaker-custom-autoscaling/issues"
+  },
+  "homepage": "https://github.com/matwerber1/aws-sagemaker-custom-autoscaling#readme",
+  "dependencies": {
+    "aws-sdk": "^2.739.0",
+    "log-timestamp": "^0.3.0"
+  }
+}

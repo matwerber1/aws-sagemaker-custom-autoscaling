@@ -1,14 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Demo of using AWS Auto-scaling to create a step-scaling policy for SageMaker with a custom metric.
+Description: Demo of using AWS Auto-scaling to create a step-scaling policy for a SageMaker endpoint with a custom metric.
 
 Parameters:
   MySageMakerEndpointName:
     Type: String
-    Default: object-detection-2020-07-13-19-26-21-768
 
   MySageMakerVariantName:
     Type: String
-    Default: AllTraffic
 
 Resources:
 
@@ -47,10 +45,11 @@ Resources:
         # Understanding the step policies can be a bit confusing... see the docs below for a bit more clarity:
         # - https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-step-scaling-policies.html
         AdjustmentType: ChangeInCapacity    #Specifies whether the ScalingAdjustment value in the StepAdjustment property is an absolute number or a percentage of the current capacity.
-        Cooldown: 300
+        Cooldown: 60
         MetricAggregationType: Average
-        # Steps are *relative* to the alarm threshold and metric that this policy applies to. 
-        # We will associate this policy to an alarm that tracks invocationsPerEndpoint and has an alarm threshold of >=0. 
+
+        # Steps are *relative* to the alarm threshold and metric that we later associate to the policy... 
+        # We will later associate this policy to an alarm that tracks invocationsPerEndpoint and has an alarm threshold of >=0. 
         # Therefore, below, 0-20 invocations = scale down, 20-50 = do nothing, > 50 scale up
         StepAdjustments: 
           -
@@ -62,7 +61,7 @@ Resources:
             ScalingAdjustment: 0  
           -
             MetricIntervalLowerBound: 50
-            ScalingAdjustment: 0  
+            ScalingAdjustment: 1
 
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarms-alarmactions
@@ -115,3 +114,10 @@ Resources:
       OKActions: 
         - !Ref SageMakerDemoScalingPolicy
 
+  SageMakerScalingDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties: 
+      DashboardName: SageMakerScalingDashboard
+      DashboardBody: 
+        !Sub "{\"widgets\":[{\"type\":\"metric\",\"x\":0,\"y\":0,\"width\":12,\"height\":9,\"properties\":{\"metrics\":[[{\"expression\":\"FILL(m2, 0)\",\"label\":\"invocationsPerInstance\",\"id\":\"e1\",\"region\":\"${AWS::Region}\"}],[\"/aws/sagemaker/Endpoints\",\"CPUUtilization\",\"EndpointName\",\"${MySageMakerEndpointName}\",\"VariantName\",\"${MySageMakerVariantName}\",{\"id\":\"m1\",\"label\":\"# of running instances\"}],[\"AWS/SageMaker\",\"InvocationsPerInstance\",\".\",\".\",\".\",\".\",{\"id\":\"m2\",\"visible\":false,\"stat\":\"Sum\"}]],\"view\":\"timeSeries\",\"stacked\":false,\"region\":\"${AWS::Region}\",\"stat\":\"SampleCount\",\"period\":60,\"title\":\"SageMaker Invocations vs Running Instances\",\"yAxis\":{\"left\":{\"label\":\"Count\",\"min\":0}}}}]}"
+      
